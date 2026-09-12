@@ -1,12 +1,11 @@
-## Første utgave
+## Rettet
 
-**KI Lys** lager lysscener per rom, uten at du skriver skript.
+**1.0.1**
+- Ingen entiteter ble opprettet. Integrasjonen spurte bare etter lys som har området satt på **entiteten**, men de fleste lys arver området fra **enheten** sin – da så den ingen lys, og uten lys lages det ingen knapper. Nå slås området opp på entiteten først og enheten etterpå
+- Er et rom tomt ved oppstart – for eksempel fordi lysintegrasjonen laster senere – prøver KI Lys på nytt når Home Assistant er ferdig startet
+- Rom med tomme lyslister skriver nå en linje i loggen så det er lett å se hva som mangler
+- Romnavn med æ, ø og å gir penere entitets-id-er: «Kjøkken» blir `kjokken`, ikke `kj_kken`
 
-- Velg rommene – lysene finnes automatisk fra områdene i Home Assistant
-- Hvert lys får en rolle ut fra navnet: tak, lampe, stemning, arbeid eller nattlys
-- Sju scener lages per rom: Maks lys, Komfort, Middag, TV-kveld, Mindre lys, Nattmodus og Alt av. Du velger hvilke du vil ha
-- Egne scener legges til i oppsettet, med lysstyrke per rolle – eller ved å peke på en scene du har fra før
-- Entiteter: `button.<rom>_lys_<scene>`, `sensor.<rom>_lys_oversikt` og `switch.<rom>_lys_alle`
-- Tjenester: `ki_lys.sett` (ett rom eller alle) og `ki_lys.les_rom`
+## Fra 1.0.0
 
-`ki-rom-card` 1.12.0 plukker opp scenene automatisk og viser dem i Scener-raden per rom.
+Lysscener per rom, laget automatisk: velg rom, lysene finnes fra områdene, og hvert lys får rolle (tak, lampe, stemning, arbeid, nattlys) ut fra navnet. Sju scener per rom, egne scener i oppsettet.

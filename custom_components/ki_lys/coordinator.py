@@ -1,12 +1,13 @@
 """Motoren: finner lysene i hvert rom, gir dem en rolle, og setter scenene."""
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import area_registry as ar, entity_registry as er
+from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er
 
 from .const import (
     CONF_EGNE,
@@ -24,6 +25,8 @@ from .const import (
     STD_SCENER,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 
 class Rom:
     """Ett rom med lysene sine."""
@@ -35,7 +38,10 @@ class Rom:
 
     @property
     def slug(self) -> str:
-        return re.sub(r"[^a-z0-9_]+", "_", self.navn.lower()).strip("_") or self.area_id
+        navn = (self.navn or self.area_id).lower()
+        for fra, til in (("æ", "ae"), ("ø", "o"), ("å", "a"), ("ä", "a"), ("ö", "o"), ("ü", "u")):
+            navn = navn.replace(fra, til)
+        return re.sub(r"[^a-z0-9_]+", "_", navn).strip("_") or self.area_id
 
 
 class LysMotor:
@@ -65,30 +71,50 @@ class LysMotor:
     def egne(self) -> list[dict[str, Any]]:
         return list(self.oppsett.get(CONF_EGNE) or [])
 
+    def _omraade_for(self, entity_id: str) -> str | None:
+        """Hvilket område et lys hører til: entitetens eget, ellers enhetens.
+        De fleste lys arver området fra enheten – derfor holder det ikke å
+        spørre om entiteter med område satt direkte."""
+        reg = er.async_get(self.hass)
+        oppf = reg.async_get(entity_id)
+        if oppf is None:
+            return None
+        if oppf.area_id:
+            return oppf.area_id
+        if oppf.device_id:
+            enhet = dr.async_get(self.hass).async_get(oppf.device_id)
+            if enhet:
+                return enhet.area_id
+        return None
+
     def les_rom(self) -> None:
         """Finner lysene i hvert valgte rom, minus de ekskluderte."""
         områder = ar.async_get(self.hass)
-        reg = er.async_get(self.hass)
         ekskl = set(self.oppsett.get(CONF_EKSKLUDER) or [])
+        valgte = list(self.oppsett.get(CONF_ROM) or [])
         self.rom = []
-        for area_id in self.oppsett.get(CONF_ROM) or []:
-            omr = områder.async_get_area(area_id)
-            if omr is None:
+        if not valgte:
+            return
+
+        # ett oppslag over alle lys, så slipper vi å spørre registeret per rom
+        per_omraade: dict[str, list[str]] = {}
+        for st in self.hass.states.async_all("light"):
+            if st.entity_id in ekskl:
                 continue
-            rom = Rom(area_id, omr.name)
-            for e in er.async_entries_for_area(reg, area_id):
-                if e.entity_id.startswith("light.") and not e.disabled_by and e.entity_id not in ekskl:
-                    rom.lys.append(e.entity_id)
-            # lys uten områdetilknytning, men på en enhet i rommet, tas også med
-            for st in self.hass.states.async_all("light"):
-                if st.entity_id in ekskl or st.entity_id in rom.lys:
-                    continue
-                oppf = reg.async_get(st.entity_id)
-                if oppf and oppf.area_id == area_id:
-                    rom.lys.append(st.entity_id)
-            rom.lys.sort()
+            omr = self._omraade_for(st.entity_id)
+            if omr:
+                per_omraade.setdefault(omr, []).append(st.entity_id)
+
+        for area_id in valgte:
+            omr = områder.async_get_area(area_id)
+            rom = Rom(area_id, omr.name if omr else area_id)
+            rom.lys = sorted(per_omraade.get(area_id, []))
             if rom.lys:
                 self.rom.append(rom)
+            else:
+                _LOGGER.warning(
+                    "KI Lys: fant ingen lys i «%s». Ligger lysene i dette området, "
+                    "og er de ikke valgt bort i oppsettet?", rom.navn)
 
     # --------------------------------------------------------------- roller
     def rolle(self, entity_id: str) -> str:

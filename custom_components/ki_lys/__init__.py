@@ -4,6 +4,7 @@ from __future__ import annotations
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import HomeAssistant, ServiceCall
 
 from .const import DOMAIN, PLATFORMS
@@ -14,6 +15,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     motor = LysMotor(hass, entry)
     motor.les_rom()
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = motor
+    if not motor.rom:
+        # ved oppstart kan lysene komme etter oss – prøv igjen når alt er lastet
+        async def _prov_igjen(_hendelse) -> None:
+            motor.les_rom()
+            if motor.rom:
+                await hass.config_entries.async_reload(entry.entry_id)
+        entry.async_on_unload(
+            hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _prov_igjen))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_oppdatert))
     _tjenester(hass)
