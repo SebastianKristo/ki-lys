@@ -6,7 +6,8 @@ PLATFORMS = ["button", "sensor", "switch"]
 
 CONF_ROM = "rom"                  # liste med area_id
 CONF_EKSKLUDER = "ekskluder"      # lys som ikke skal være med
-CONF_SCENER = "scener"            # hvilke scener som lages
+CONF_SCENER = "scener"            # hvilke scener som lages (standard for alle rom)
+CONF_SCENER_ROM = "scener_rom"    # {area_id: [scene]} – eget utvalg per rom
 CONF_EGNE = "egne"                # egne scener lagt til manuelt
 CONF_OVERGANG = "overgang"        # sekunder på dimmingen
 CONF_NATTLYS = "nattlys"          # lys som får stå på i nattmodus

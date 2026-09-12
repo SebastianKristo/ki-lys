@@ -18,6 +18,7 @@ from .const import (
     CONF_OVERSTYR,
     CONF_ROM,
     CONF_SCENER,
+    CONF_SCENER_ROM,
     CONF_UTELAT,
     DOMAIN,
     FOLG_ROLLEN,
@@ -68,10 +69,56 @@ class KiLysOptionsFlow(OptionsFlow):
         self.entry = entry
         self._egne: list[dict[str, Any]] = list({**entry.data, **entry.options}.get(CONF_EGNE) or [])
         self._scene: str = "komfort"
+        self._rom: str = ""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         return self.async_show_menu(step_id="init",
-                                    menu_options=["innstillinger", "scener", "overstyr"])
+                                    menu_options=["innstillinger", "rom_scener", "scener", "overstyr"])
+
+    # ----------------------------------------------------- scener per rom
+    async def async_step_rom_scener(self, user_input: dict[str, Any] | None = None):
+        """Velg hvilket rom du vil endre utvalget for."""
+        if user_input is not None:
+            self._rom = user_input["rom"]
+            return await self.async_step_rom_valg()
+        motor = next(iter(self.hass.data.get(DOMAIN, {}).values()), None)
+        alternativer = [{"value": r.area_id, "label": r.navn} for r in (motor.rom if motor else [])]
+        if not alternativer:
+            return self.async_abort(reason="ingen_rom")
+        return self.async_show_form(step_id="rom_scener", data_schema=vol.Schema({
+            vol.Required("rom"): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=alternativer, mode="list")),
+        }))
+
+    async def async_step_rom_valg(self, user_input: dict[str, Any] | None = None):
+        """Huk av scenene dette rommet skal ha."""
+        d = {**self.entry.data, **self.entry.options}
+        per_rom = {k: list(v) for k, v in (d.get(CONF_SCENER_ROM) or {}).items()}
+        motor = next(iter(self.hass.data.get(DOMAIN, {}).values()), None)
+        rom = next((r for r in (motor.rom if motor else []) if r.area_id == self._rom), None)
+
+        if user_input is not None:
+            valgt = list(user_input.get("scener") or [])
+            if user_input.get("som_standard"):
+                per_rom.pop(self._rom, None)          # tilbake til standardutvalget
+            else:
+                per_rom[self._rom] = valgt
+            return self.async_create_entry(title="", data={
+                **{k: v for k, v in d.items() if k != CONF_SCENER_ROM},
+                CONF_SCENER_ROM: per_rom, CONF_EGNE: self._egne,
+            })
+
+        naa = per_rom.get(self._rom, d.get(CONF_SCENER) or STD_SCENER)
+        alternativer = [{"value": k, "label": v["navn"]} for k, v in SCENER.items()]
+        alternativer += [{"value": e["id"], "label": e.get("navn") or e["id"]} for e in self._egne]
+        return self.async_show_form(
+            step_id="rom_valg",
+            data_schema=vol.Schema({
+                vol.Optional("scener", default=[x for x in naa]): selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=alternativer, multiple=True, mode="list")),
+                vol.Optional("som_standard", default=False): bool,
+            }),
+            description_placeholders={"rom": rom.navn if rom else self._rom})
 
     # --------------------------------------------------- overstyring per lys
     async def async_step_overstyr(self, user_input: dict[str, Any] | None = None):
@@ -174,6 +221,8 @@ class KiLysOptionsFlow(OptionsFlow):
             }
             if user_input.get("scene"):
                 scene["scene"] = user_input["scene"]
+            if user_input.get("rom"):
+                scene["rom"] = list(user_input["rom"])      # tom = alle rom
             self._egne = [e for e in self._egne if e["id"] != scene["id"]] + [scene]
             return self._lagre()
 
@@ -189,6 +238,7 @@ class KiLysOptionsFlow(OptionsFlow):
             vol.Optional("kelvin", default=2700): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=2000, max=6500, step=100, unit_of_measurement="K", mode="box")),
             vol.Optional("scene"): selector.EntitySelector(selector.EntitySelectorConfig(domain="scene")),
+            vol.Optional("rom"): selector.AreaSelector(selector.AreaSelectorConfig(multiple=True)),
         }))
 
     def _lagre(self):

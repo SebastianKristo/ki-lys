@@ -18,6 +18,7 @@ from .const import (
     CONF_OVERSTYR,
     CONF_ROM,
     CONF_SCENER,
+    CONF_SCENER_ROM,
     CONF_UTELAT,
     DOMAIN,
     FOLG_ROLLEN,
@@ -70,6 +71,13 @@ class LysMotor:
     def valgte_scener(self) -> list[str]:
         valgt = self.oppsett.get(CONF_SCENER) or STD_SCENER
         return [s for s in STD_SCENER if s in valgt]
+
+    def scener_for(self, rom: Rom) -> list[str]:
+        """Hvert rom kan ha sitt eget utvalg. Uten eget valg gjelder standarden."""
+        eget = (self.oppsett.get(CONF_SCENER_ROM) or {}).get(rom.area_id)
+        if eget is None:
+            return self.valgte_scener
+        return [s for s in STD_SCENER if s in eget]
 
     @property
     def egne(self) -> list[dict[str, Any]]:
@@ -299,9 +307,13 @@ class LysMotor:
             await self.sett(rom.area_id, scene)
 
     # -------------------------------------------------------------- oversikt
-    def scener(self) -> list[dict[str, Any]]:
-        ut = [{"id": s, **SCENER[s]} for s in self.valgte_scener]
+    def scener(self, rom: Rom | None = None) -> list[dict[str, Any]]:
+        valgte = self.scener_for(rom) if rom else self.valgte_scener
+        ut = [{"id": s, **SCENER[s]} for s in valgte]
         for e in self.egne:
+            rom_valg = e.get("rom")           # egen scene kan gjelde bare noen rom
+            if rom and rom_valg and rom.area_id not in rom_valg:
+                continue
             ut.append({"id": e.get("id"), "navn": e.get("navn") or e.get("id"),
                        "ikon": e.get("ikon") or "mdi:lightbulb-group", "rekkefolge": 90})
         return sorted(ut, key=lambda x: x.get("rekkefolge", 50))
@@ -311,7 +323,7 @@ class LysMotor:
         return {
             "rom": rom.navn, "area_id": rom.area_id, "slug": rom.slug,
             "lys": rom.lys, "roller": roller,
-            "scener": [{**s, "entity": f"button.{rom.slug}_lys_{s['id']}"} for s in self.scener()],
+            "scener": [{**s, "entity": f"button.{rom.slug}_lys_{s['id']}"} for s in self.scener(rom)],
             "antall_lys": len(rom.lys),
             "paa_naa": [x for x in rom.lys if (self.hass.states.get(x) or None) and self.hass.states.get(x).state == "on"],
         }

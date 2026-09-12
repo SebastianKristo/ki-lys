@@ -1,14 +1,11 @@
 ## Nytt
 
-**1.1.0 – overstyr enkeltlys**
+**1.2.0 – scener per rom**
 
-- Options → *Overstyr lys i en scene*: en glidebryter per lys. **−1** lar rollen bestemme, **0** slår lyset av, **1–100** setter fast lysstyrke
-- **«Ikke med i denne scenen»** lar et lys stå helt urørt når scenen settes, og **«Lys i tillegg»** tar med lys fra andre rom
-- `ki_lys.lagre_naa` leser lysene slik de står akkurat nå og lagrer dem som overstyring – sett lyset som du vil ha det, og lagre
-- `ki_lys.sett_lys`, `ki_lys.legg_til_lys`, `ki_lys.fjern_lys` og `ki_lys.nullstill` gjør det samme fra automasjoner
+- Options → *Scener per rom*: velg rommet, og huk av scenene det skal ha. Badet kan ha tre, stua alle sju
+- «Bruk standardutvalget i stedet» setter rommet tilbake til fellesvalget
+- Egne scener kan begrenses til bestemte rom i skjemaet for ny scene. Tomt betyr alle rom
 
-Overstyringene lagres i options, uten at integrasjonen lastes på nytt. Egne scener følger de samme reglene.
+## Fra 1.1.0
 
-## Fra 1.0.1
-
-Områdeoppslaget leser nå både entitetens og enhetens område – uten det ble det ikke laget entiteter i det hele tatt.
+Overstyring per lys per scene: glidebryter der −1 følger rollen, 0 slår av og 1–100 setter fast lysstyrke, pluss «ikke med» og «lys i tillegg». `ki_lys.lagre_naa` fanger lysbildet slik det står nå.

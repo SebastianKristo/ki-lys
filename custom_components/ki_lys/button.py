@@ -14,7 +14,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add: AddEnt
     motor = hass.data[DOMAIN][entry.entry_id]
     knapper: list[ButtonEntity] = []
     for rom in motor.rom:
-        for scene in motor.scener():
+        for scene in motor.scener(rom):
             knapper.append(SceneKnapp(motor, rom, scene))
     add(knapper)
 

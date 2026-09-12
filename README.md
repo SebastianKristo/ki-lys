@@ -89,6 +89,20 @@ data: {scene: natt}
 action: ki_lys.les_rom
 ```
 
+## Scener per rom
+
+Standardutvalget gjelder alle rom, men hvert rom kan ha sitt eget. Options → *Scener per rom* → velg rommet,
+og huk av de scenene du vil ha der. Badet trenger kanskje bare Maks lys, Nattmodus og Alt av, mens stua har
+alle sju.
+
+Huker du av **«Bruk standardutvalget i stedet»**, følger rommet standarden igjen.
+
+Knappene som forsvinner, slettes fra Home Assistant ved neste omstart av integrasjonen – de som kommer til,
+dukker opp med en gang.
+
+Egne scener kan også begrenses: i skjemaet for en ny scene velger du rommene den skal gjelde for. Tomt betyr
+alle.
+
 ## Overstyr enkeltlys
 
 Rollene treffer som regel, men ikke alltid. Options → *Overstyr lys i en scene* → velg scenen, og du får en

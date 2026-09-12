@@ -21,7 +21,8 @@
         "menu_options": {
           "innstillinger": "Innstillinger",
           "scener": "Egne scener",
-          "overstyr": "Overstyr lys i en scene"
+          "overstyr": "Overstyr lys i en scene",
+          "rom_scener": "Scener per rom"
         }
       },
       "innstillinger": {
@@ -52,7 +53,8 @@
           "arbeid": "Arbeidslys",
           "nattlys": "Nattlys",
           "kelvin": "Fargetemperatur",
-          "scene": "Bruk denne scenen i stedet"
+          "scene": "Bruk denne scenen i stedet",
+          "rom": "Bare i disse rommene (tomt = alle)"
         }
       },
       "overstyr": {
@@ -68,7 +70,24 @@
           "utelat": "Ikke med i denne scenen",
           "ekstra": "Lys i tillegg"
         }
+      },
+      "rom_scener": {
+        "title": "Scener per rom",
+        "data": {
+          "rom": "Hvilket rom?"
+        }
+      },
+      "rom_valg": {
+        "title": "Scener i {rom}",
+        "description": "Huk av scenene dette rommet skal ha. Rommet kan ha færre eller flere enn de andre.",
+        "data": {
+          "scener": "Scener i dette rommet",
+          "som_standard": "Bruk standardutvalget i stedet"
+        }
       }
+    },
+    "abort": {
+      "ingen_rom": "Ingen rom med lys ennå. Velg rom under Innstillinger først."
     }
   }
 }
