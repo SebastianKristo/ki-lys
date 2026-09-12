@@ -1,0 +1,59 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "KI Lys",
+        "description": "Velg rommene som skal få lysscener. Lysene finnes automatisk i hvert rom – velg bort dem som ikke skal være med.",
+        "data": {
+          "rom": "Rom",
+          "ekskluder": "Lys som ikke skal være med",
+          "nattlys": "Lys som får stå på i nattmodus",
+          "scener": "Scener som skal lages",
+          "overgang": "Overgang"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "KI Lys",
+        "menu_options": {
+          "innstillinger": "Innstillinger",
+          "scener": "Egne scener"
+        }
+      },
+      "innstillinger": {
+        "title": "Innstillinger",
+        "data": {
+          "rom": "Rom",
+          "ekskluder": "Lys som ikke skal være med",
+          "nattlys": "Lys som får stå på i nattmodus",
+          "scener": "Scener som skal lages",
+          "overgang": "Overgang"
+        }
+      },
+      "scener": {
+        "title": "Egne scener",
+        "data": {
+          "valg": "Hva vil du gjøre?"
+        }
+      },
+      "ny": {
+        "title": "Ny scene",
+        "description": "Sett lysstyrken per rolle. 0 % slår rollen av. Velger du en scene-entitet, brukes den i stedet.",
+        "data": {
+          "navn": "Navn",
+          "ikon": "Ikon",
+          "tak": "Taklys",
+          "lampe": "Lamper",
+          "stemning": "Stemningslys",
+          "arbeid": "Arbeidslys",
+          "nattlys": "Nattlys",
+          "kelvin": "Fargetemperatur",
+          "scene": "Bruk denne scenen i stedet"
+        }
+      }
+    }
+  }
+}

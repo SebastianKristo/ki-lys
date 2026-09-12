@@ -1,0 +1,20 @@
+sett:
+  name: Sett lysscene
+  description: Setter en lysscene i ett rom, eller i alle rom.
+  fields:
+    scene:
+      name: Scene
+      required: true
+      example: komfort
+      selector:
+        select:
+          options: [maks, komfort, middag, tv, mindre, natt, av]
+    rom:
+      name: Rom
+      description: Områdets navn eller id. Utelates for alle rom.
+      example: stue
+      selector: { text: }
+
+les_rom:
+  name: Les rom på nytt
+  description: Leser rom og lys på nytt uten omstart.
