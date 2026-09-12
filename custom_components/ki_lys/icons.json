@@ -1,0 +1,89 @@
+{
+  "entity": {
+    "button": {
+      "maks": {
+        "default": "mdi:lightbulb-on"
+      },
+      "komfort": {
+        "default": "mdi:sofa"
+      },
+      "middag": {
+        "default": "mdi:silverware-fork-knife"
+      },
+      "tv": {
+        "default": "mdi:television-classic"
+      },
+      "mindre": {
+        "default": "mdi:lightbulb-on-40"
+      },
+      "natt": {
+        "default": "mdi:weather-night"
+      },
+      "av": {
+        "default": "mdi:lightbulb-off"
+      },
+      "alle_pa": {
+        "default": "mdi:lightbulb-on-outline"
+      },
+      "alle_av": {
+        "default": "mdi:lightbulb-off-outline"
+      }
+    },
+    "sensor": {
+      "oversikt": {
+        "default": "mdi:lightbulb-group"
+      },
+      "nedtelling": {
+        "default": "mdi:calendar-star"
+      },
+      "tent": {
+        "default": "mdi:string-lights"
+      }
+    },
+    "switch": {
+      "alle": {
+        "default": "mdi:lightbulb-group",
+        "state": {
+          "off": "mdi:lightbulb-group-off"
+        }
+      },
+      "sesong": {
+        "default": "mdi:pine-tree",
+        "state": {
+          "off": "mdi:pine-tree-outline"
+        }
+      }
+    },
+    "binary_sensor": {
+      "i_sesong": {
+        "default": "mdi:calendar-check",
+        "state": {
+          "off": "mdi:calendar-blank"
+        }
+      }
+    }
+  },
+  "services": {
+    "sett": {
+      "service": "mdi:lightbulb-group"
+    },
+    "les_rom": {
+      "service": "mdi:home-search"
+    },
+    "lagre_naa": {
+      "service": "mdi:content-save-outline"
+    },
+    "sett_lys": {
+      "service": "mdi:tune-vertical"
+    },
+    "legg_til_lys": {
+      "service": "mdi:lightbulb-multiple-outline"
+    },
+    "fjern_lys": {
+      "service": "mdi:lightbulb-off-outline"
+    },
+    "nullstill": {
+      "service": "mdi:backup-restore"
+    }
+  }
+}

@@ -1,14 +1,9 @@
 ## Nytt
 
-**2.0.0 – julelys**
+**2.1.0**
+- `icons.json`: alle entitetene og tjenestene har fått faste ikoner, så de ser riktige ut i entitetslista, i tjenestevelgeren og på fliser – uten at du setter ikon manuelt
+- Bryterne bytter ikon når de slås av
 
-- Options → *Julelys*: velg julelysene og sett sesongdatoene. Lysene grupperes automatisk i julestjerner, julestaker og utendørs ut fra navnet
-- `sensor.ki_jul_nedtelling` teller ned – til sesongstart før 1. november, til julaften i sesongen, og til sesongslutt etter julaften. Attributtene har fase, framdrift i prosent, gruppene og alle lysene, klare for kortet
-- `sensor.ki_jul_tent`, `switch.ki_jul_sesong`, `binary_sensor.ki_jul_i_sesong` og knappene `button.ki_jul_alle_pa` / `_alle_av`
-- Erstatter nedtellingssensoren, tellingen av tente lys og av/på-skriptene i den gamle jule-pakken
+## Merk om integrasjonsikonet
 
-Bruk sammen med `ki-jul-card` i ki-cards 3.2.0, som beholder designet fra julepopupen.
-
-## Fra 1.3.0
-
-Soner som slår flere rom sammen, scener per rom, og overstyring per lys.
+Selve logoen ved siden av «KI Lys» i HACS og på integrasjonssiden hentes fra **brands.home-assistant.io**, ikke fra repoet. Den krever en pull request til `home-assistant/brands` – filene ligger klare i `brands-ikoner.zip`.
