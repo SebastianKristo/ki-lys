@@ -20,7 +20,8 @@
         "title": "KI Lys",
         "menu_options": {
           "innstillinger": "Innstillinger",
-          "scener": "Egne scener"
+          "scener": "Egne scener",
+          "overstyr": "Overstyr lys i en scene"
         }
       },
       "innstillinger": {
@@ -52,6 +53,20 @@
           "nattlys": "Nattlys",
           "kelvin": "Fargetemperatur",
           "scene": "Bruk denne scenen i stedet"
+        }
+      },
+      "overstyr": {
+        "title": "Overstyr lys",
+        "data": {
+          "scene": "Hvilken scene?"
+        }
+      },
+      "lys": {
+        "title": "Overstyr lys i {scene}",
+        "description": "Sett lysstyrken per lys. −1 lar rollen bestemme, 0 slår lyset av. «Ikke med» lar lyset stå urørt, «I tillegg» tar med lys fra andre rom.",
+        "data": {
+          "utelat": "Ikke med i denne scenen",
+          "ekstra": "Lys i tillegg"
         }
       }
     }

@@ -12,11 +12,15 @@ from homeassistant.helpers import area_registry as ar, device_registry as dr, en
 from .const import (
     CONF_EGNE,
     CONF_EKSKLUDER,
+    CONF_EKSTRA_LYS,
     CONF_NATTLYS,
     CONF_OVERGANG,
+    CONF_OVERSTYR,
     CONF_ROM,
     CONF_SCENER,
+    CONF_UTELAT,
     DOMAIN,
+    FOLG_ROLLEN,
     OPPSKRIFT,
     ROLLER,
     SCENER,
@@ -134,6 +138,42 @@ class LysMotor:
             ut.setdefault(self.rolle(lys), []).append(lys)
         return ut
 
+    # ------------------------------------------------------------ overstyring
+    def overstyringer(self, scene: str) -> dict[str, dict]:
+        return dict((self.oppsett.get(CONF_OVERSTYR) or {}).get(scene) or {})
+
+    def lys_i_scene(self, rom: Rom, scene: str) -> list[str]:
+        """Lysene scenen gjelder for: rommets lys, minus utelatte, pluss ekstra."""
+        utelat = set((self.oppsett.get(CONF_UTELAT) or {}).get(scene) or [])
+        ekstra = [x for x in ((self.oppsett.get(CONF_EKSTRA_LYS) or {}).get(scene) or [])
+                  if self._hoer_til(x, rom)]
+        return [x for x in rom.lys if x not in utelat] + [x for x in ekstra if x not in rom.lys]
+
+    def _hoer_til(self, entity_id: str, rom: Rom) -> bool:
+        """Ekstra lys kan være skrevet som «light.x» eller «rom:light.x»."""
+        if ":" not in entity_id:
+            return True
+        omr, _, _ = entity_id.partition(":")
+        return omr in (rom.area_id, rom.slug, rom.navn)
+
+    def _innstilling(self, lys: str, scene: str, oppskrift: dict) -> tuple[int, int] | None:
+        """Overstyring for dette lyset i denne scenen, ellers rollens verdi."""
+        o = self.overstyringer(scene).get(lys)
+        fra_rolle = oppskrift.get(self.rolle(lys))
+        if not o:
+            return fra_rolle
+        if o.get("paa") is False:
+            return None
+        styrke = o.get("lysstyrke", FOLG_ROLLEN)
+        kelvin = o.get("kelvin") or (fra_rolle[1] if fra_rolle else 2700)
+        if styrke is None or int(styrke) == FOLG_ROLLEN:
+            if fra_rolle is None:
+                return (60, kelvin) if o.get("paa") else None
+            return (fra_rolle[0], kelvin)
+        if int(styrke) <= 0:
+            return None
+        return (int(styrke), kelvin)
+
     # ---------------------------------------------------------------- kjør
     async def sett(self, area_id: str, scene: str) -> None:
         """Setter en scene i ett rom."""
@@ -149,9 +189,8 @@ class LysMotor:
         oppskrift = OPPSKRIFT.get(scene)
         if oppskrift is None:
             return
-        for lys in rom.lys:
-            innstilling = oppskrift.get(self.rolle(lys))
-            await self._sett_lys(lys, innstilling)
+        for lys in self.lys_i_scene(rom, scene):
+            await self._sett_lys(lys, self._innstilling(lys, scene, oppskrift))
 
     async def _kjor_egen(self, rom: Rom, egen: dict[str, Any]) -> None:
         """Egen scene: enten faste verdier per rolle, eller en scene/skript."""
@@ -162,10 +201,9 @@ class LysMotor:
             domene, tjeneste = str(egen["skript"]).split(".", 1)
             await self.hass.services.async_call(domene, tjeneste, {}, blocking=False)
             return
-        for lys in rom.lys:
-            rolle = self.rolle(lys)
-            verdi = (egen.get("roller") or {}).get(rolle)
-            await self._sett_lys(lys, tuple(verdi) if verdi else None)
+        oppskrift = {r: (tuple(v) if v else None) for r, v in (egen.get("roller") or {}).items()}
+        for lys in self.lys_i_scene(rom, egen.get("id", "")):
+            await self._sett_lys(lys, self._innstilling(lys, egen.get("id", ""), oppskrift))
 
     async def _sett_lys(self, entity_id: str, innstilling: tuple[int, int] | None) -> None:
         if innstilling is None:
@@ -183,6 +221,78 @@ class LysMotor:
         if "color_temp" in moduser:
             data["color_temp_kelvin"] = int(kelvin)
         await self.hass.services.async_call("light", "turn_on", data, blocking=False)
+
+    def fang(self, rom: Rom, scene: str) -> dict[str, dict]:
+        """Leser lysene slik de står nå, som overstyringer for scenen."""
+        ut: dict[str, dict] = {}
+        for lys in self.lys_i_scene(rom, scene):
+            st = self.hass.states.get(lys)
+            if st is None:
+                continue
+            if st.state != "on":
+                ut[lys] = {"paa": False}
+                continue
+            lysstyrke = st.attributes.get("brightness")
+            rad: dict[str, Any] = {"paa": True}
+            if lysstyrke is not None:
+                rad["lysstyrke"] = max(1, round(int(lysstyrke) / 255 * 100))
+            kelvin = st.attributes.get("color_temp_kelvin")
+            if kelvin:
+                rad["kelvin"] = int(kelvin)
+            ut[lys] = rad
+        return ut
+
+    async def lagre_naa(self, scene: str, area_id: str | None = None) -> None:
+        """Lagrer dagens lysbilde som overstyring, i ett rom eller i alle."""
+        alle = dict(self.oppsett.get(CONF_OVERSTYR) or {})
+        for r in self.rom:
+            if area_id and r.area_id != area_id:
+                continue
+            alle.setdefault(scene, {}).update(self.fang(r, scene))
+        self._lagre({CONF_OVERSTYR: alle})
+
+    async def sett_lys(self, scene: str, entity_id: str, lysstyrke: int | None = None,
+                       paa: bool | None = None, kelvin: int | None = None) -> None:
+        """Setter én overstyring – eller fjerner den når alt er tomt."""
+        alle = dict(self.oppsett.get(CONF_OVERSTYR) or {})
+        rad = dict((alle.get(scene) or {}).get(entity_id) or {})
+        if lysstyrke is not None:
+            rad["lysstyrke"] = int(lysstyrke)
+        if paa is not None:
+            rad["paa"] = bool(paa)
+        if kelvin is not None:
+            rad["kelvin"] = int(kelvin)
+        scenen = dict(alle.get(scene) or {})
+        if rad:
+            scenen[entity_id] = rad
+        else:
+            scenen.pop(entity_id, None)
+        alle[scene] = scenen
+        self._lagre({CONF_OVERSTYR: alle})
+
+    async def legg_til_lys(self, scene: str, entity_id: str) -> None:
+        """Tar et lys inn i scenen igjen, eller legger til et utenfra."""
+        utelat = {k: list(v) for k, v in (self.oppsett.get(CONF_UTELAT) or {}).items()}
+        ekstra = {k: list(v) for k, v in (self.oppsett.get(CONF_EKSTRA_LYS) or {}).items()}
+        utelat[scene] = [x for x in utelat.get(scene, []) if x != entity_id]
+        i_rom = any(entity_id in r.lys for r in self.rom)
+        if not i_rom and entity_id not in ekstra.get(scene, []):
+            ekstra.setdefault(scene, []).append(entity_id)
+        self._lagre({CONF_UTELAT: utelat, CONF_EKSTRA_LYS: ekstra})
+
+    async def fjern_lys(self, scene: str, entity_id: str) -> None:
+        """Tar et lys ut av scenen."""
+        utelat = {k: list(v) for k, v in (self.oppsett.get(CONF_UTELAT) or {}).items()}
+        ekstra = {k: list(v) for k, v in (self.oppsett.get(CONF_EKSTRA_LYS) or {}).items()}
+        ekstra[scene] = [x for x in ekstra.get(scene, []) if x != entity_id]
+        if entity_id not in utelat.get(scene, []):
+            utelat.setdefault(scene, []).append(entity_id)
+        self._lagre({CONF_UTELAT: utelat, CONF_EKSTRA_LYS: ekstra})
+
+    def _lagre(self, nytt: dict[str, Any]) -> None:
+        """Skriver til options uten å laste integrasjonen på nytt."""
+        options = {**self.entry.options, **nytt}
+        self.hass.config_entries.async_update_entry(self.entry, options=options)
 
     async def sett_alle(self, scene: str) -> None:
         for rom in self.rom:

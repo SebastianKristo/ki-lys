@@ -68,4 +68,54 @@ def _tjenester(hass: HomeAssistant) -> None:
         vol.Required("scene"): str,
         vol.Optional("rom"): str,
     }))
+    def finn_rom(m, rom: str | None):
+        if not rom:
+            return [r.area_id for r in m.rom]
+        return [r.area_id for r in m.rom if rom in (r.area_id, r.navn, r.slug)]
+
+    async def lagre_naa(call: ServiceCall) -> None:
+        """Lagrer lysene slik de står nå som overstyring for scenen."""
+        for m in motorer():
+            for area_id in finn_rom(m, call.data.get("rom")):
+                await m.lagre_naa(call.data["scene"], area_id)
+
+    async def sett_lys(call: ServiceCall) -> None:
+        """Overstyrer ett lys i én scene."""
+        for m in motorer():
+            await m.sett_lys(
+                call.data["scene"], call.data["entity_id"],
+                lysstyrke=call.data.get("lysstyrke"),
+                paa=call.data.get("pa"),
+                kelvin=call.data.get("kelvin"))
+
+    async def legg_til_lys(call: ServiceCall) -> None:
+        for m in motorer():
+            await m.legg_til_lys(call.data["scene"], call.data["entity_id"])
+
+    async def fjern_lys(call: ServiceCall) -> None:
+        for m in motorer():
+            await m.fjern_lys(call.data["scene"], call.data["entity_id"])
+
+    async def nullstill(call: ServiceCall) -> None:
+        """Fjerner overstyringene for en scene, så rollene gjelder igjen."""
+        for m in motorer():
+            alle = dict(m.oppsett.get("overstyr") or {})
+            alle.pop(call.data["scene"], None)
+            m._lagre({"overstyr": alle})
+
+    scene_felt = {vol.Required("scene"): str}
+    hass.services.async_register(DOMAIN, "lagre_naa", lagre_naa, schema=vol.Schema({
+        **scene_felt, vol.Optional("rom"): str}))
+    hass.services.async_register(DOMAIN, "sett_lys", sett_lys, schema=vol.Schema({
+        **scene_felt,
+        vol.Required("entity_id"): str,
+        vol.Optional("lysstyrke"): vol.Coerce(int),
+        vol.Optional("pa"): bool,
+        vol.Optional("kelvin"): vol.Coerce(int),
+    }))
+    hass.services.async_register(DOMAIN, "legg_til_lys", legg_til_lys, schema=vol.Schema({
+        **scene_felt, vol.Required("entity_id"): str}))
+    hass.services.async_register(DOMAIN, "fjern_lys", fjern_lys, schema=vol.Schema({
+        **scene_felt, vol.Required("entity_id"): str}))
+    hass.services.async_register(DOMAIN, "nullstill", nullstill, schema=vol.Schema(scene_felt))
     hass.services.async_register(DOMAIN, "les_rom", les_rom)

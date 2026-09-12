@@ -10,6 +10,11 @@ CONF_SCENER = "scener"            # hvilke scener som lages
 CONF_EGNE = "egne"                # egne scener lagt til manuelt
 CONF_OVERGANG = "overgang"        # sekunder på dimmingen
 CONF_NATTLYS = "nattlys"          # lys som får stå på i nattmodus
+CONF_OVERSTYR = "overstyr"        # {scene: {entity_id: {paa, lysstyrke, kelvin}}}
+CONF_UTELAT = "utelat"            # {scene: [entity_id]} – lys som ikke er med i scenen
+CONF_EKSTRA_LYS = "ekstra_lys"    # {scene: [entity_id]} – lys utenfra som skal med
+
+FOLG_ROLLEN = -1                  # lysstyrke -1 betyr «la rollen bestemme»
 
 STD_OVERGANG = 2
 

@@ -12,15 +12,24 @@ from homeassistant.helpers import selector
 from .const import (
     CONF_EGNE,
     CONF_EKSKLUDER,
+    CONF_EKSTRA_LYS,
     CONF_NATTLYS,
     CONF_OVERGANG,
+    CONF_OVERSTYR,
     CONF_ROM,
     CONF_SCENER,
+    CONF_UTELAT,
     DOMAIN,
+    FOLG_ROLLEN,
     SCENER,
     STD_OVERGANG,
     STD_SCENER,
 )
+
+
+def _felt(entity_id: str) -> str:
+    """Entitets-id som feltnavn i skjemaet."""
+    return "lys_" + entity_id.replace(".", "__")
 
 
 def _skjema(d: dict[str, Any]) -> vol.Schema:
@@ -58,9 +67,72 @@ class KiLysOptionsFlow(OptionsFlow):
     def __init__(self, entry: ConfigEntry) -> None:
         self.entry = entry
         self._egne: list[dict[str, Any]] = list({**entry.data, **entry.options}.get(CONF_EGNE) or [])
+        self._scene: str = "komfort"
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
-        return self.async_show_menu(step_id="init", menu_options=["innstillinger", "scener"])
+        return self.async_show_menu(step_id="init",
+                                    menu_options=["innstillinger", "scener", "overstyr"])
+
+    # --------------------------------------------------- overstyring per lys
+    async def async_step_overstyr(self, user_input: dict[str, Any] | None = None):
+        """Velg scenen du vil justere."""
+        if user_input is not None:
+            self._scene = user_input["scene"]
+            return await self.async_step_lys()
+        d = {**self.entry.data, **self.entry.options}
+        valgte = d.get(CONF_SCENER) or list(SCENER)
+        alternativer = [{"value": k, "label": SCENER[k]["navn"]} for k in SCENER if k in valgte]
+        alternativer += [{"value": e["id"], "label": e.get("navn") or e["id"]} for e in self._egne]
+        return self.async_show_form(step_id="overstyr", data_schema=vol.Schema({
+            vol.Required("scene"): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=alternativer, mode="list")),
+        }))
+
+    async def async_step_lys(self, user_input: dict[str, Any] | None = None):
+        """Sett lysstyrke per lys, og velg hvilke lys som er med."""
+        motor = next(iter(self.hass.data.get(DOMAIN, {}).values()), None)
+        scene = self._scene
+        d = {**self.entry.data, **self.entry.options}
+        i_rom: list[str] = []
+        for rom in (motor.rom if motor else []):
+            i_rom.extend(rom.lys)
+        utelat_na = (d.get(CONF_UTELAT) or {}).get(scene) or []
+        ekstra_na = (d.get(CONF_EKSTRA_LYS) or {}).get(scene) or []
+        alle_lys = sorted(set(i_rom) | set(ekstra_na))
+        overstyr = dict((d.get(CONF_OVERSTYR) or {}).get(scene) or {})
+
+        if user_input is not None:
+            nytt = dict(d.get(CONF_OVERSTYR) or {})
+            rad: dict[str, Any] = {}
+            for lys in alle_lys:
+                verdi = user_input.get(_felt(lys))
+                if verdi is None or int(verdi) == FOLG_ROLLEN:
+                    continue
+                rad[lys] = {"paa": int(verdi) > 0, "lysstyrke": int(verdi)}
+            nytt[scene] = rad
+            utelat = {k: list(v) for k, v in (d.get(CONF_UTELAT) or {}).items()}
+            ekstra = {k: list(v) for k, v in (d.get(CONF_EKSTRA_LYS) or {}).items()}
+            utelat[scene] = list(user_input.get("utelat") or [])
+            ekstra[scene] = [x for x in (user_input.get("ekstra") or []) if x not in i_rom]
+            return self.async_create_entry(title="", data={
+                **{k: v for k, v in d.items() if k not in (CONF_OVERSTYR, CONF_UTELAT, CONF_EKSTRA_LYS)},
+                CONF_OVERSTYR: nytt, CONF_UTELAT: utelat, CONF_EKSTRA_LYS: ekstra, CONF_EGNE: self._egne,
+            })
+
+        felt: dict[Any, Any] = {}
+        for lys in alle_lys:
+            o = overstyr.get(lys) or {}
+            std = o.get("lysstyrke", 0 if o.get("paa") is False else FOLG_ROLLEN)
+            felt[vol.Optional(_felt(lys), default=std, description={"suggested_value": std})] = \
+                selector.NumberSelector(selector.NumberSelectorConfig(
+                    min=FOLG_ROLLEN, max=100, step=1, mode="slider"))
+        felt[vol.Optional("utelat", default=utelat_na)] = selector.EntitySelector(
+            selector.EntitySelectorConfig(domain="light", multiple=True))
+        felt[vol.Optional("ekstra", default=ekstra_na)] = selector.EntitySelector(
+            selector.EntitySelectorConfig(domain="light", multiple=True))
+        return self.async_show_form(
+            step_id="lys", data_schema=vol.Schema(felt),
+            description_placeholders={"scene": SCENER.get(scene, {}).get("navn", scene)})
 
     async def async_step_innstillinger(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:

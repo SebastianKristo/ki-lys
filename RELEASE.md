@@ -1,11 +1,14 @@
-## Rettet
+## Nytt
 
-**1.0.1**
-- Ingen entiteter ble opprettet. Integrasjonen spurte bare etter lys som har området satt på **entiteten**, men de fleste lys arver området fra **enheten** sin – da så den ingen lys, og uten lys lages det ingen knapper. Nå slås området opp på entiteten først og enheten etterpå
-- Er et rom tomt ved oppstart – for eksempel fordi lysintegrasjonen laster senere – prøver KI Lys på nytt når Home Assistant er ferdig startet
-- Rom med tomme lyslister skriver nå en linje i loggen så det er lett å se hva som mangler
-- Romnavn med æ, ø og å gir penere entitets-id-er: «Kjøkken» blir `kjokken`, ikke `kj_kken`
+**1.1.0 – overstyr enkeltlys**
 
-## Fra 1.0.0
+- Options → *Overstyr lys i en scene*: en glidebryter per lys. **−1** lar rollen bestemme, **0** slår lyset av, **1–100** setter fast lysstyrke
+- **«Ikke med i denne scenen»** lar et lys stå helt urørt når scenen settes, og **«Lys i tillegg»** tar med lys fra andre rom
+- `ki_lys.lagre_naa` leser lysene slik de står akkurat nå og lagrer dem som overstyring – sett lyset som du vil ha det, og lagre
+- `ki_lys.sett_lys`, `ki_lys.legg_til_lys`, `ki_lys.fjern_lys` og `ki_lys.nullstill` gjør det samme fra automasjoner
 
-Lysscener per rom, laget automatisk: velg rom, lysene finnes fra områdene, og hvert lys får rolle (tak, lampe, stemning, arbeid, nattlys) ut fra navnet. Sju scener per rom, egne scener i oppsettet.
+Overstyringene lagres i options, uten at integrasjonen lastes på nytt. Egne scener følger de samme reglene.
+
+## Fra 1.0.1
+
+Områdeoppslaget leser nå både entitetens og enhetens område – uten det ble det ikke laget entiteter i det hele tatt.

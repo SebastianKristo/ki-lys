@@ -89,6 +89,48 @@ data: {scene: natt}
 action: ki_lys.les_rom
 ```
 
+## Overstyr enkeltlys
+
+Rollene treffer som regel, men ikke alltid. Options → *Overstyr lys i en scene* → velg scenen, og du får en
+glidebryter per lys:
+
+| Verdi | Betyr |
+|---|---|
+| **−1** | La rollen bestemme – som før |
+| **0** | Slå lyset av i denne scenen |
+| **1–100** | Fast lysstyrke i prosent |
+
+Nederst velger du **«Ikke med i denne scenen»** for lys som skal stå helt urørt, og **«Lys i tillegg»** for
+lys fra andre rom som skal følge med.
+
+Det raskeste er likevel å sette lyset slik du vil ha det, og så lagre bildet:
+
+```yaml
+action: ki_lys.lagre_naa
+data: {scene: tv, rom: stue}
+```
+
+Da leses av/på, lysstyrke og fargetemperatur fra lysene akkurat nå, og lagres som overstyringer for scenen.
+
+Flere tjenester:
+
+```yaml
+# Ett lys om gangen
+action: ki_lys.sett_lys
+data: {scene: tv, entity_id: light.stue_taklys, lysstyrke: 15}
+
+# Inn og ut av scenen
+action: ki_lys.legg_til_lys
+data: {scene: tv, entity_id: light.gang}
+
+action: ki_lys.fjern_lys
+data: {scene: middag, entity_id: light.tv_benk_stripe}
+
+# Tilbake til rollene
+action: ki_lys.nullstill
+data: {scene: tv}
+```
+
 ## Egne scener
 
 Options → *Egne scener* → *Legg til en scene*. Du setter lysstyrke per rolle og en fargetemperatur, og
