@@ -1,7 +1,7 @@
 {
   "domain": "ki_lys",
   "name": "KI Lys",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "documentation": "https://github.com/SebastianKristo/ki-lys",
   "issue_tracker": "https://github.com/SebastianKristo/ki-lys/issues",
   "codeowners": ["@SebastianKristo"],

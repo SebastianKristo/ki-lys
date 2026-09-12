@@ -8,6 +8,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import ATTR_INTEGRASJON, ATTR_TYPE, DOMAIN
 from .entity import LysEntitet
+from .jul_entiteter import AlleKnapp
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add: AddEntitiesCallback) -> None:
@@ -16,6 +17,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add: AddEnt
     for rom in motor.rom:
         for scene in motor.scener(rom):
             knapper.append(SceneKnapp(motor, rom, scene))
+    if motor.jul.aktiv:
+        knapper.extend([AlleKnapp(motor, True), AlleKnapp(motor, False)])
     add(knapper)
 
 

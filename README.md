@@ -89,6 +89,53 @@ data: {scene: natt}
 action: ki_lys.les_rom
 ```
 
+## Julelys
+
+Options → *Julelys*. Huk av **Slå på julelysdelen**, velg julelysene – `input_boolean`, `switch` eller `light`
+– og sett datoene:
+
+| Felt | Standard | Betyr |
+|---|---|---|
+| **Sesongen starter** | `11-01` | 1. november |
+| **Sesongen slutter** | `03-01` | 1. mars |
+| **Teller ned til** | `12-24` | Julaften |
+
+Lysene grupperes automatisk etter navnet: *julestjerne* → Julestjerner, *julestake* → Julestaker,
+*slynge/ute/veranda* → Utendørs, resten → Annet julelys.
+
+**Entiteter**
+
+| Entitet | Viser |
+|---|---|
+| `sensor.ki_jul_nedtelling` | Dager igjen. Attributtene har fase, framdrift, grupper og alle lysene |
+| `sensor.ki_jul_tent` | Hvor mange julelys som står på |
+| `switch.ki_jul_sesong` | På tenner alle, av slukker alle |
+| `binary_sensor.ki_jul_i_sesong` | Om vi er inne i julesesongen |
+| `button.ki_jul_alle_pa` / `_alle_av` | Alt på, alt av |
+
+Nedtellingen snur seg selv: før 1. november teller den ned til sesongstart, i sesongen til julaften, og etter
+julaften til sesongen slutter.
+
+`ki-jul-card` i [ki-cards](https://github.com/SebastianKristo/ki-cards) viser dette med nedtellingskort,
+sesongflis, alle av/på og fanene Lys og Automasjon.
+
+## Soner – flere rom som ett
+
+Soverommet ditt består av tre områder i Home Assistant: soverom, seng og benk. Skal de ha ett felles sett
+scener, lager du en sone: Options → *Soner – flere rom som ett* → *Legg til en sone*.
+
+| Felt | Betydning |
+|---|---|
+| **Navn** | Sonens navn, for eksempel «Soverommet». Entitetene blir `button.soverommet_lys_<scene>` |
+| **Rom som skal være med** | Områdene sonen dekker |
+| **Skjul de enkelte rommene** | Fjerner knappene for hvert enkelt rom, så bare sonen står igjen |
+
+Lysene fra alle områdene havner i samme scene, og rollene gjelder på tvers: taklyset i soverommet og
+sengelampa behandles hver for seg, men settes av samme knapp.
+
+`ki-rom-card` velger riktig sett selv. Viser kortet nøyaktig de samme rommene som sonen dekker, brukes
+sonens knapper. Viser det bare ett av rommene, brukes det rommets egne knapper – hvis du har beholdt dem.
+
 ## Scener per rom
 
 Standardutvalget gjelder alle rom, men hvert rom kan ha sitt eget. Options → *Scener per rom* → velg rommet,

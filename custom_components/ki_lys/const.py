@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 DOMAIN = "ki_lys"
-PLATFORMS = ["button", "sensor", "switch"]
+PLATFORMS = ["button", "sensor", "switch", "binary_sensor"]
 
 CONF_ROM = "rom"                  # liste med area_id
 CONF_EKSKLUDER = "ekskluder"      # lys som ikke skal være med
 CONF_SCENER = "scener"            # hvilke scener som lages (standard for alle rom)
 CONF_SCENER_ROM = "scener_rom"    # {area_id: [scene]} – eget utvalg per rom
+CONF_SONER = "soner"              # [{navn, rom: [area_id], skjul_enkeltrom}] – flere rom som ett
 CONF_EGNE = "egne"                # egne scener lagt til manuelt
 CONF_OVERGANG = "overgang"        # sekunder på dimmingen
 CONF_NATTLYS = "nattlys"          # lys som får stå på i nattmodus
@@ -16,6 +17,20 @@ CONF_UTELAT = "utelat"            # {scene: [entity_id]} – lys som ikke er med
 CONF_EKSTRA_LYS = "ekstra_lys"    # {scene: [entity_id]} – lys utenfra som skal med
 
 FOLG_ROLLEN = -1                  # lysstyrke -1 betyr «la rollen bestemme»
+
+# ---------------------------------------------------------------- julelys
+CONF_JUL = "jul"                  # {aktiv, grupper, fra, til, maal, varsler}
+STD_JUL_FRA = "11-01"             # julesesongen slås på
+STD_JUL_TIL = "03-01"             # og av igjen
+STD_JUL_MAAL = "12-24"            # nedtellingen går mot julaften
+
+# Gruppene i julepopupen: navn, ikon og hvordan de gjenkjennes
+JUL_GRUPPER = [
+    ("stjerner", "Julestjerner", "mdi:star-four-points", r"stjerne"),
+    ("staker", "Julestaker", "mdi:candelabra-fire", r"stake|lysestake"),
+    ("ute", "Utendørs", "mdi:string-lights", r"slynge|ute|veranda|hage|inngang"),
+    ("annet", "Annet julelys", "mdi:string-lights", r""),
+]
 
 STD_OVERGANG = 2
 

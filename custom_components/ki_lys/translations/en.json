@@ -22,7 +22,9 @@
           "innstillinger": "Innstillinger",
           "scener": "Egne scener",
           "overstyr": "Overstyr lys i en scene",
-          "rom_scener": "Scener per rom"
+          "rom_scener": "Scener per rom",
+          "soner": "Soner – flere rom som ett",
+          "julelys": "Julelys"
         }
       },
       "innstillinger": {
@@ -83,6 +85,32 @@
         "data": {
           "scener": "Scener i dette rommet",
           "som_standard": "Bruk standardutvalget i stedet"
+        }
+      },
+      "soner": {
+        "title": "Soner",
+        "data": {
+          "valg": "Hva vil du gjøre?"
+        }
+      },
+      "ny_sone": {
+        "title": "Ny sone",
+        "description": "En sone slår flere rom sammen til ett sett scener. Soverommet ditt med benk, seng og soverom blir da én knapperad.",
+        "data": {
+          "navn": "Navn på sonen",
+          "rom": "Rom som skal være med",
+          "skjul_enkeltrom": "Skjul de enkelte rommene"
+        }
+      },
+      "julelys": {
+        "title": "Julelys",
+        "description": "Velg julelysene – julestjerner, staker og utelys. De grupperes automatisk etter navnet. Datoene skrives som MM-DD.",
+        "data": {
+          "aktiv": "Slå på julelysdelen",
+          "lys": "Julelys",
+          "fra": "Sesongen starter",
+          "til": "Sesongen slutter",
+          "maal": "Teller ned til"
         }
       }
     },

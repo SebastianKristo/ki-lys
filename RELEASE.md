@@ -1,11 +1,14 @@
 ## Nytt
 
-**1.2.0 – scener per rom**
+**2.0.0 – julelys**
 
-- Options → *Scener per rom*: velg rommet, og huk av scenene det skal ha. Badet kan ha tre, stua alle sju
-- «Bruk standardutvalget i stedet» setter rommet tilbake til fellesvalget
-- Egne scener kan begrenses til bestemte rom i skjemaet for ny scene. Tomt betyr alle rom
+- Options → *Julelys*: velg julelysene og sett sesongdatoene. Lysene grupperes automatisk i julestjerner, julestaker og utendørs ut fra navnet
+- `sensor.ki_jul_nedtelling` teller ned – til sesongstart før 1. november, til julaften i sesongen, og til sesongslutt etter julaften. Attributtene har fase, framdrift i prosent, gruppene og alle lysene, klare for kortet
+- `sensor.ki_jul_tent`, `switch.ki_jul_sesong`, `binary_sensor.ki_jul_i_sesong` og knappene `button.ki_jul_alle_pa` / `_alle_av`
+- Erstatter nedtellingssensoren, tellingen av tente lys og av/på-skriptene i den gamle jule-pakken
 
-## Fra 1.1.0
+Bruk sammen med `ki-jul-card` i ki-cards 3.2.0, som beholder designet fra julepopupen.
 
-Overstyring per lys per scene: glidebryter der −1 følger rollen, 0 slår av og 1–100 setter fast lysstyrke, pluss «ikke med» og «lys i tillegg». `ki_lys.lagre_naa` fanger lysbildet slik det står nå.
+## Fra 1.3.0
+
+Soner som slår flere rom sammen, scener per rom, og overstyring per lys.

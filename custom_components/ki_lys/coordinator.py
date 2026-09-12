@@ -19,6 +19,7 @@ from .const import (
     CONF_ROM,
     CONF_SCENER,
     CONF_SCENER_ROM,
+    CONF_SONER,
     CONF_UTELAT,
     DOMAIN,
     FOLG_ROLLEN,
@@ -30,16 +31,23 @@ from .const import (
     STD_SCENER,
 )
 
+from .jul import JuleMotor
+
 _LOGGER = logging.getLogger(__name__)
 
 
 class Rom:
-    """Ett rom med lysene sine."""
+    """Ett rom – eller en sone som slår flere rom sammen."""
 
-    def __init__(self, area_id: str, navn: str) -> None:
-        self.area_id = area_id
+    def __init__(self, area_id: str, navn: str, omrader: list[str] | None = None) -> None:
+        self.area_id = area_id                       # id-en scenene knyttes til
         self.navn = navn
+        self.omrader = omrader or [area_id]          # områdene sonen dekker
         self.lys: list[str] = []
+
+    @property
+    def er_sone(self) -> bool:
+        return len(self.omrader) > 1
 
     @property
     def slug(self) -> str:
@@ -49,6 +57,13 @@ class Rom:
         return re.sub(r"[^a-z0-9_]+", "_", navn).strip("_") or self.area_id
 
 
+def _slug(navn: str) -> str:
+    navn = (navn or "").lower()
+    for fra, til in (("æ", "ae"), ("ø", "o"), ("å", "a"), ("ä", "a"), ("ö", "o"), ("ü", "u")):
+        navn = navn.replace(fra, til)
+    return re.sub(r"[^a-z0-9_]+", "_", navn).strip("_") or "sone"
+
+
 class LysMotor:
     """Leser rom og lys fra Home Assistant, og kjører scenene."""
 
@@ -56,6 +71,7 @@ class LysMotor:
         self.hass = hass
         self.entry = entry
         self.rom: list[Rom] = []
+        self.jul = JuleMotor(hass, self)
         self._lyttere: list = []
 
     # ------------------------------------------------------------- oppsett
@@ -117,7 +133,27 @@ class LysMotor:
             if omr:
                 per_omraade.setdefault(omr, []).append(st.entity_id)
 
+        # sonene først, så vi vet hvilke enkeltrom som eventuelt skal skjules
+        soner = self.oppsett.get(CONF_SONER) or []
+        skjult: set[str] = set()
+        for sone in soner:
+            omrader = [a for a in (sone.get("rom") or []) if a in valgte or not valgte]
+            if not omrader:
+                continue
+            lys: list[str] = []
+            for a in omrader:
+                lys.extend(per_omraade.get(a, []))
+            rom = Rom(sone.get("id") or _slug(sone.get("navn", "sone")),
+                      sone.get("navn") or "Sone", omrader)
+            rom.lys = sorted(set(lys))
+            if sone.get("skjul_enkeltrom"):
+                skjult.update(omrader)
+            if rom.lys:
+                self.rom.append(rom)
+
         for area_id in valgte:
+            if area_id in skjult:
+                continue
             omr = områder.async_get_area(area_id)
             rom = Rom(area_id, omr.name if omr else area_id)
             rom.lys = sorted(per_omraade.get(area_id, []))
@@ -321,7 +357,8 @@ class LysMotor:
     def oversikt(self, rom: Rom) -> dict[str, Any]:
         roller = self.roller_i(rom)
         return {
-            "rom": rom.navn, "area_id": rom.area_id, "slug": rom.slug,
+            "rom": rom.navn, "area_id": rom.area_id, "area_ids": rom.omrader,
+            "er_sone": rom.er_sone, "slug": rom.slug,
             "lys": rom.lys, "roller": roller,
             "scener": [{**s, "entity": f"button.{rom.slug}_lys_{s['id']}"} for s in self.scener(rom)],
             "antall_lys": len(rom.lys),

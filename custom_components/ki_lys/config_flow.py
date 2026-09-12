@@ -19,13 +19,34 @@ from .const import (
     CONF_ROM,
     CONF_SCENER,
     CONF_SCENER_ROM,
+    CONF_SONER,
+    CONF_JUL,
     CONF_UTELAT,
     DOMAIN,
+    STD_JUL_FRA,
+    STD_JUL_MAAL,
+    STD_JUL_TIL,
     FOLG_ROLLEN,
     SCENER,
     STD_OVERGANG,
     STD_SCENER,
 )
+
+
+def _mm_dd(verdi: Any, standard: str) -> str:
+    """Godtar «11-01», «1. november» finnes ikke – vi holder oss til MM-DD."""
+    tekst = str(verdi or "").strip()
+    biter = tekst.split("-")
+    if len(biter) == 2 and biter[0].isdigit() and biter[1].isdigit():
+        return f"{int(biter[0]):02d}-{int(biter[1]):02d}"
+    return standard
+
+
+def _sone_id(navn: str) -> str:
+    navn = (navn or "").lower()
+    for fra, til in (("æ", "ae"), ("ø", "o"), ("å", "a"), ("ä", "a"), ("ö", "o"), ("ü", "u")):
+        navn = navn.replace(fra, til)
+    return "".join(c if c.isalnum() else "_" for c in navn).strip("_") or "sone"
 
 
 def _felt(entity_id: str) -> str:
@@ -70,10 +91,83 @@ class KiLysOptionsFlow(OptionsFlow):
         self._egne: list[dict[str, Any]] = list({**entry.data, **entry.options}.get(CONF_EGNE) or [])
         self._scene: str = "komfort"
         self._rom: str = ""
+        self._soner: list[dict[str, Any]] = list({**entry.data, **entry.options}.get(CONF_SONER) or [])
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         return self.async_show_menu(step_id="init",
-                                    menu_options=["innstillinger", "rom_scener", "scener", "overstyr"])
+                                    menu_options=["innstillinger", "soner", "rom_scener",
+                                                  "scener", "overstyr", "julelys"])
+
+    # ---------------------------------------------------------------- julelys
+    async def async_step_julelys(self, user_input: dict[str, Any] | None = None):
+        """Julelysene: hvilke lys, når sesongen varer, og hva det telles ned til."""
+        d = {**self.entry.data, **self.entry.options}
+        jul = dict(d.get(CONF_JUL) or {})
+        if user_input is not None:
+            ny = {
+                "aktiv": bool(user_input.get("aktiv")),
+                "lys": list(user_input.get("lys") or []),
+                "fra": _mm_dd(user_input.get("fra"), STD_JUL_FRA),
+                "til": _mm_dd(user_input.get("til"), STD_JUL_TIL),
+                "maal": _mm_dd(user_input.get("maal"), STD_JUL_MAAL),
+                "grupper": jul.get("grupper") or {},
+            }
+            return self.async_create_entry(title="", data={
+                **{k: v for k, v in d.items() if k != CONF_JUL},
+                CONF_JUL: ny, CONF_EGNE: self._egne,
+            })
+        return self.async_show_form(step_id="julelys", data_schema=vol.Schema({
+            vol.Optional("aktiv", default=jul.get("aktiv", False)): bool,
+            vol.Optional("lys", default=jul.get("lys", [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(
+                    domain=["light", "switch", "input_boolean"], multiple=True)),
+            vol.Optional("fra", default=jul.get("fra", STD_JUL_FRA)): str,
+            vol.Optional("til", default=jul.get("til", STD_JUL_TIL)): str,
+            vol.Optional("maal", default=jul.get("maal", STD_JUL_MAAL)): str,
+        }))
+
+    # ------------------------------------------------------------------ soner
+    async def async_step_soner(self, user_input: dict[str, Any] | None = None):
+        """Soner slår flere rom sammen til ett sett scener."""
+        if user_input is not None:
+            valg = user_input["valg"]
+            if valg == "ny":
+                return await self.async_step_ny_sone()
+            if valg.startswith("slett:"):
+                sid = valg.split(":", 1)[1]
+                self._soner = [s for s in self._soner if s.get("id") != sid]
+                return self._lagre_soner()
+        alternativer = [{"value": "ny", "label": "Legg til en sone"}]
+        alternativer += [{"value": f"slett:{s['id']}", "label": f"Slett «{s.get('navn') or s['id']}»"}
+                         for s in self._soner]
+        return self.async_show_form(step_id="soner", data_schema=vol.Schema({
+            vol.Required("valg"): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=alternativer, mode="list")),
+        }))
+
+    async def async_step_ny_sone(self, user_input: dict[str, Any] | None = None):
+        if user_input is not None:
+            navn = user_input["navn"]
+            sone = {
+                "id": _sone_id(navn),
+                "navn": navn,
+                "rom": list(user_input["rom"]),
+                "skjul_enkeltrom": bool(user_input.get("skjul_enkeltrom")),
+            }
+            self._soner = [s for s in self._soner if s["id"] != sone["id"]] + [sone]
+            return self._lagre_soner()
+        return self.async_show_form(step_id="ny_sone", data_schema=vol.Schema({
+            vol.Required("navn"): str,
+            vol.Required("rom"): selector.AreaSelector(selector.AreaSelectorConfig(multiple=True)),
+            vol.Optional("skjul_enkeltrom", default=False): bool,
+        }))
+
+    def _lagre_soner(self):
+        d = {**self.entry.data, **self.entry.options}
+        return self.async_create_entry(title="", data={
+            **{k: v for k, v in d.items() if k != CONF_SONER},
+            CONF_SONER: self._soner, CONF_EGNE: self._egne,
+        })
 
     # ----------------------------------------------------- scener per rom
     async def async_step_rom_scener(self, user_input: dict[str, Any] | None = None):

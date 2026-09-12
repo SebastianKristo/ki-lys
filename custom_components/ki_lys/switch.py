@@ -8,11 +8,15 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import ATTR_INTEGRASJON, ATTR_TYPE, DOMAIN
 from .entity import LysEntitet
+from .jul_entiteter import Sesong
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add: AddEntitiesCallback) -> None:
     motor = hass.data[DOMAIN][entry.entry_id]
-    add([RomLys(motor, rom) for rom in motor.rom])
+    ut = [RomLys(motor, rom) for rom in motor.rom]
+    if motor.jul.aktiv:
+        ut.append(Sesong(motor))
+    add(ut)
 
 
 class RomLys(LysEntitet, SwitchEntity):
